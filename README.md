@@ -12,6 +12,7 @@ O **Horas** é um projeto acadêmico independente voltado aos estudantes da **CE
 
 - **Perfil do aluno:** nome e seleção do curso, com meta de horas preenchida automaticamente.
 - **Painel de progresso:** horas aprovadas, enviadas, simuladas e saldo restante.
+- **Passo a passo na página inicial:** simular, revisar atividades, abrir a solicitação no Lyceum e atualizar o status das atividades para Aprovada após a confirmação da faculdade. A solicitação e a consulta oficial são feitas pelo aluno no Lyceum, fora do Horas. O passo 4 abre Minhas atividades sem filtros para localizar e editar os registros simulados ou enviados.
 - **Simulador:** previsão de aproveitamento com conversões e limites por categoria.
 - **24 categorias:** consulta às regras, à comprovação exigida e aos requisitos.
 - **Gestão de atividades:** cadastro, edição, exclusão, busca e filtros.
