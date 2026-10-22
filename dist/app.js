@@ -1,5 +1,6 @@
 import {categories,getCategory,calculate,validateRecord} from './rules.js';
 import {COURSES,findProfileCourse,createCourseProfile,validateProfile,summarize,createBackup,restoreBackup} from './profile.js';
+import {clearWorkspace} from './storage.js';
 const $=s=>document.querySelector(s);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>Number(n).toLocaleString('pt-BR',{maximumFractionDigits:2});
@@ -8,6 +9,7 @@ const viewNames={overview:'Visão geral',activities:'Minhas atividades',categori
 let records=[],profile=null,db,view='overview',editing=null,existingEvidence=null,search='',statusFilter='',categoryFilter='',toastTimer;
 const form=$('#activity-form');
 const dialog=$('#activity-dialog');
+let resetInProgress=false;
 const storage=new Promise((resolve,reject)=>{const req=indexedDB.open('horas-complementares-v1',1);req.onupgradeneeded=()=>req.result.createObjectStore('data');req.onsuccess=()=>{db=req.result;resolve(db);};req.onerror=()=>reject(req.error);});
 async function readWorkspace(){
   await storage;
@@ -46,7 +48,7 @@ function renderOverview(){const c=summarize(records,profile),a=c.totals.approved
     <li><span class="journey-number">Passo 4</span><h3><a href="#activities" data-action="navigate" data-view="activities" data-reset-filters="true">Atualizar status das atividades <span aria-hidden="true">↗</span></a></h3><p>Após confirmar a aprovação no Lyceum, abra Minhas atividades, edite a atividade simulada ou enviada e altere sua situação para Aprovada.</p></li>
   </ol>
 </section><section class="academic-disclaimer" aria-labelledby="academic-disclaimer-title"><span class="disclaimer-icon" aria-hidden="true">ⓘ</span><div><h2 id="academic-disclaimer-title">AVISO</h2><p class="disclaimer-body">Este sistema é um projeto acadêmico independente, destinado a apoiar estudantes da CESAR School no planejamento e acompanhamento de suas atividades complementares, exclusivamente para fins educacionais e sem finalidade comercial.</p><p class="disclaimer-body"><strong>Os cálculos apresentados são uma SIMULAÇÃO de aproveitamento de horas e não representam aprovação ou reconhecimento oficial das atividades. A validação das atividades e das horas correspondentes depende da ANÁLISE e da APROVAÇÃO DA COORDENAÇÃO DO CURSO</strong>, conforme o regulamento vigente e a documentação apresentada no Lyceum.</p><p class="disclaimer-reference"><strong>Regras atuais - 2026.2 :</strong> <a href="https://drive.google.com/file/d/1fpUxnOsYP123YRaCTnLq7jALZRvU9zox/view?usp=drive_link/" target="_blank" rel="noopener noreferrer">Manual do Estudante - Páginas 34 e 35 ↗</a></p></div></section><section class="stats" aria-label="Resumo das horas"><article class="stat"><div class="stat-head"><span class="stat-icon">✓</span> Horas aprovadas</div><div class="stat-value">${fmt(a)}<span>h</span></div><small>Aprovação informada por você</small></article><article class="stat"><div class="stat-head"><span class="stat-icon">◷</span> Aguardando avaliação</div><div class="stat-value">${fmt(c.totals.pending)}<span>h</span></div><small>Estimativa das atividades enviadas</small></article><article class="stat"><div class="stat-head"><span class="stat-icon">◇</span> Horas simuladas</div><div class="stat-value">${fmt(c.totals.simulated)}<span>h</span></div><small>Possibilidades para seu planejamento</small></article><article class="stat"><div class="stat-head"><span class="stat-icon">⚑</span> Falta para sua meta</div><div class="stat-value">${fmt(remaining)}<span>h</span></div><small>${fmt(Math.min(a/profile.goal*100,100))}% da meta concluída</small></article></section><div class="dashboard-grid"><section class="panel"><div class="panel-heading"><div><h2>Atividades recentes</h2><p>Seus próximos passos e suas conquistas.</p></div><button class="text-button" data-action="navigate" data-view="activities">Ver todas ↗</button></div>${records.length?[...records].reverse().slice(0,4).map(r=>activityRow(r,c)).join(''):empty()}</section><section class="panel"><div class="panel-heading"><div><h2>Horas por categoria</h2><p>Ocupação prevista dos limites do manual.</p></div><span style="color:#9ba2aa">▦</span></div><div class="category-bars">${shown.map(cat=>`<div class="category-bar"><div class="bar-label">${esc(cat.name)}<span>${fmt(c.used[cat.id]||0)} / ${cat.cap} h</span></div><div class="track"><span style="width:${(c.used[cat.id]||0)/cat.cap*100}%"></span></div></div>`).join('')}<button class="text-button" data-action="navigate" data-view="categories">Explorar as 24 categorias ↗</button></div></section></div>`;}
-function renderActivities(){return heading('Minha coleção de conquistas.','Registre, simule e acompanhe cada atividade em um só lugar.')+`<div class="toolbar"><label class="search" style="margin:0"><span class="optional" hidden>Buscar atividades</span><input id="activity-search" aria-label="Buscar atividades" placeholder="Buscar uma atividade..." value="${esc(search)}" style="margin:0"></label><select id="status-filter" aria-label="Filtrar por situação"><option value="">Todas as situações</option>${Object.entries(statusLabels).map(([id,name])=>`<option value="${id}" ${statusFilter===id?'selected':''}>${name}</option>`).join('')}</select><select id="category-filter" aria-label="Filtrar por categoria"><option value="">Todas as categorias</option>${categories.map(c=>`<option value="${c.id}" ${categoryFilter===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div><div class="panel" id="activities-list">${activitiesTable()}</div><div class="data-actions"><button class="backup-button" data-action="export">↓ Exportar backup completo</button><button class="backup-button" data-action="import">↑ Importar backup</button><span>Os comprovantes ficam neste navegador. Guarde uma cópia de segurança.</span></div>`;}
+function renderActivities(){return heading('Minha coleção de conquistas.','Registre, simule e acompanhe cada atividade em um só lugar.')+`<div class="toolbar"><label class="search" style="margin:0"><span class="optional" hidden>Buscar atividades</span><input id="activity-search" aria-label="Buscar atividades" placeholder="Buscar uma atividade..." value="${esc(search)}" style="margin:0"></label><select id="status-filter" aria-label="Filtrar por situação"><option value="">Todas as situações</option>${Object.entries(statusLabels).map(([id,name])=>`<option value="${id}" ${statusFilter===id?'selected':''}>${name}</option>`).join('')}</select><select id="category-filter" aria-label="Filtrar por categoria"><option value="">Todas as categorias</option>${categories.map(c=>`<option value="${c.id}" ${categoryFilter===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div><div class="panel" id="activities-list">${activitiesTable()}</div><div class="data-actions"><button class="backup-button" data-action="export">↓ Salvar uma cópia dos meus dados</button><button class="backup-button" data-action="import">↑ Recuperar meus dados de uma cópia</button><span>Os comprovantes ficam neste navegador. Guarde uma cópia de segurança.</span></div>`;}
 function activitiesTable(){const c=calculate(records);const filtered=records.filter(r=>(!statusFilter||r.status===statusFilter)&&(!categoryFilter||r.category===categoryFilter)&&`${r.title} ${getCategory(r.category).name}`.toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR'))).reverse();if(!records.length)return empty('Sua primeira conquista está por vir.','Um curso, um estágio ou um evento: comece pelo que você já tem.');if(!filtered.length)return '<div class="empty"><h3>Nenhuma atividade encontrada</h3><p>Tente outro termo ou altere os filtros.</p></div>';return `<div class="table-wrap"><table><thead><tr><th>ATIVIDADE</th><th>SITUAÇÃO</th><th>APROVEITAMENTO</th><th>AÇÕES</th></tr></thead><tbody>${filtered.map(r=>`<tr><td><strong>${esc(r.title)}</strong><small>${esc(getCategory(r.category).name)} · ${r.date.split('-').reverse().join('/')}</small></td><td>${badge(r.status)}</td><td><strong>${fmt(c.results.get(r.id).credited)} h</strong>${c.results.get(r.id).excluded?`<small>${fmt(c.results.get(r.id).excluded)} h fora do limite</small>`:''}</td><td><div class="actions"><button class="icon-button" data-action="detail" data-id="${esc(r.id)}" aria-label="Ver ${esc(r.title)}" title="Ver detalhes">↗</button><button class="icon-button" data-action="edit" data-id="${esc(r.id)}" aria-label="Editar ${esc(r.title)}" title="Editar">✎</button><button class="icon-button danger" data-action="delete" data-id="${esc(r.id)}" aria-label="Excluir ${esc(r.title)}" title="Excluir">×</button></div></td></tr>`).join('')}</tbody></table></div>`;}
 function renderCategories(){const c=calculate(records);return heading('Encontre seu próximo caminho.','24 categorias, seus limites e o que você precisa comprovar.',false)+`<div class="notice">Regras da CESAR School, transcritas do manual fornecido para este projeto. Alterar o curso ou a meta do perfil não altera estes limites. Confira se este regulamento se aplica ao seu curso. Nos casos sem conversão explícita, a simulação usa as horas comprovadas, sujeitas à análise da faculdade. Confirme eventuais regras gerais e a versão do manual antes da entrega.</div><div class="toolbar"><label class="search" style="margin:0"><input id="category-search" aria-label="Buscar categoria" placeholder="Buscar categoria ou atividade..." style="margin:0"></label></div><div class="categories-grid" id="category-grid">${categories.map(cat=>`<article class="category-card" data-category-text="${esc((cat.name+' '+cat.rule).toLocaleLowerCase('pt-BR'))}"><div class="category-top"><span>▦ Categoria</span><strong>${cat.cap} h <span class="optional">máximo</span></strong></div><h3>${esc(cat.name)}</h3><p>${esc(cat.rule)}</p><details><summary>Ver comprovação e condições</summary><p>${esc(cat.proof)}</p>${cat.checks.length?`<ul class="checklist">${cat.checks.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`:''}</details><div class="track"><span style="width:${(c.used[cat.id]||0)/cat.cap*100}%"></span></div><div class="category-meta"><span>${fmt(c.used[cat.id]||0)} h previstas</span><span>${fmt(Math.max(0,cat.cap-(c.used[cat.id]||0)))} h disponíveis</span></div><button class="text-button" data-action="new" data-category="${cat.id}">Simular nesta categoria ↗</button></article>`).join('')}</div><p id="no-categories" class="empty" hidden>Nenhuma categoria encontrada.</p>`;}
 function renderSimulator(){return heading('Antes de enviar, experimente.','Entenda o que sua próxima atividade pode acrescentar à sua jornada.',false)+`<section class="panel simulator-hero"><div><span class="eyebrow">PLANEJE COM MAIS CLAREZA</span><h2>Seu certificado tem horas.<br>Vamos descobrir quantas contam?</h2><p>O simulador considera a regra da categoria e as atividades que você já cadastrou. A estimativa vem com o cálculo e os requisitos para conferir.</p><button class="button primary" data-action="new">◇ Fazer uma simulação <span>↗</span></button></div><div class="steps"><div class="step"><span>01</span><div><h3>Escolha a categoria</h3><p>Consulte o enquadramento da atividade no manual.</p></div></div><div class="step"><span>02</span><div><h3>Informe a participação</h3><p>Horas, meses ou quantidade, conforme a regra.</p></div></div><div class="step"><span>03</span><div><h3>Veja o aproveitamento</h3><p>Confira a conversão, os limites e os documentos.</p></div></div></div></section><section class="example"><h3>Na prática: um workshop CESAR de 8 horas</h3><p>A conversão gera 4 horas complementares. Se você já tem 18 das 20 horas permitidas nessa categoria, o aproveitamento adicional será de 2 horas.</p></section><div class="tip"><span>◇</span><div><strong>Uma estimativa para se organizar.</strong><p>A simulação não aprova certificados e não substitui a avaliação da faculdade. Concursos e outras atividades têm análise específica.</p></div></div>`;}
@@ -68,9 +70,10 @@ function renderProfile(){
       <div class="notice"><strong>Regulamento utilizado: CESAR School</strong><br>As 24 categorias e seus limites seguem as tabelas do manual fornecido para este projeto. Confirme se essas regras se aplicam ao seu curso. A meta acompanha o curso selecionado; os limites das categorias continuam seguindo esse manual.</div>
       ${records.length?`<p class="profile-preserved">✓ Suas ${records.length} atividades já cadastradas serão mantidas.</p>`:''}
       <p id="profile-error" class="error" role="alert"></p>
-      <div class="profile-form-actions"><button class="button primary" type="submit">${first?'Começar minha jornada':'Salvar perfil'} <span>↗</span></button>${first?'<button class="text-button" type="button" data-action="import">Já tenho um backup</button>':'<a href="#overview" class="button secondary">Voltar ao painel</a>'}</div>
+      <div class="profile-form-actions"><button class="button primary" type="submit">${first?'Começar minha jornada':'Salvar perfil'} <span>↗</span></button>${first?'<button class="text-button" type="button" data-action="import">Já tenho uma cópia dos meus dados</button>':'<a href="#overview" class="button secondary">Voltar ao painel</a>'}</div>
     </form>
     <p class="profile-privacy">Seu perfil, suas atividades e seus comprovantes ficam neste navegador. Este perfil não cria uma conta nem sincroniza dados entre dispositivos.</p>
+    ${!first?`<section class="reset-zone" aria-labelledby="reset-zone-title"><h2 id="reset-zone-title">Recomeçar do zero</h2><p>Apague seu perfil, todas as atividades e os comprovantes salvos neste navegador. Salve uma cópia dos seus dados antes se quiser recuperar seus registros depois.</p><button type="button" class="button destructive-outline" id="open-reset">Apagar meus dados e recomeçar</button></section>`:''}
   </section>`;
 }
 function render(){
@@ -101,7 +104,7 @@ async function exportBackup(){
   try{
     const data=createBackup(records,profile);
     download(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),`horas-backup-${new Date().toLocaleDateString('en-CA')}.json`);
-    toast('Backup exportado com perfil, atividades e comprovantes.');
+    toast('Cópia dos seus dados gerada. Guarde o arquivo baixado para recuperá-los quando precisar.');
   }catch(error){toast(error.message);}
 }
 document.addEventListener('click',async event=>{const b=event.target.closest('[data-action]');if(!b)return;const {action,id,category}=b.dataset;try{if(action==='navigate'){if(b.dataset.view==='activities'){statusFilter=b.dataset.status||'';if(b.dataset.resetFilters==='true'){search='';categoryFilter='';}}if(location.hash==='#'+b.dataset.view)render();else location.hash=b.dataset.view;}if(action==='new')openForm(category);if(action==='edit')openForm(null,records.find(r=>r.id===id));if(action==='detail')showDetails(id);if(action==='detail-edit'){$('#detail-dialog').close();openForm(null,records.find(r=>r.id===id));}if(action==='delete'){const r=records.find(r=>r.id===id);if(r&&confirm(`Excluir “${r.title}” e o comprovante? Esta ação não pode ser desfeita.`)){await persist(records.filter(r=>r.id!==id));render();toast('Atividade excluída. Os saldos foram recalculados.');}}if(action==='export')await exportBackup();if(action==='import')$('#import-file').click();if(action==='evidence')downloadEvidence(id);}catch(error){toast(error.message);}});
@@ -113,15 +116,15 @@ $('#close-modal').onclick=$('#cancel-modal').onclick=()=>dialog.close();$('#clos
 $('#import-file').addEventListener('change',async event=>{
   const file=event.target.files[0];if(!file)return;
   try{
-    if(file.size>100*1024*1024)throw Error('O backup excede o limite de 100 MB.');
+    if(file.size>100*1024*1024)throw Error('O arquivo selecionado excede o limite de 100 MB.');
     const data=JSON.parse(await file.text());
     const next=restoreBackup(data,profile);
-    const detail=data.version===2?`O perfil será restaurado para ${next.profile.name}, ${next.profile.course}, com meta de ${fmt(next.profile.goal)} horas.`:profile?'Seu perfil e sua meta atuais serão mantidos.':'Depois, preencha seu nome, curso e meta para continuar.';
-    if(confirm(`Restaurar ${next.records.length} atividades? O backup substituirá seus registros atuais. ${detail} Exporte uma cópia antes de continuar.`)){
+    const detail=data.version===2?`O perfil recuperado será o de ${next.profile.name}, ${next.profile.course}, com meta de ${fmt(next.profile.goal)} horas.`:profile?'Seu perfil e sua meta atuais serão mantidos.':'Depois, preencha seu nome, curso e meta para continuar.';
+    if(confirm(`Recuperar ${next.records.length} atividades do arquivo escolhido? Os dados desse arquivo substituirão os registros atuais deste navegador. ${detail} Para guardar os dados atuais, cancele e salve uma cópia antes de continuar.`)){
       await persist(next.records,next.profile);
-      render();toast('Backup restaurado com sucesso.');
+      render();toast('Seus dados foram recuperados com sucesso.');
     }
-  }catch(error){toast(error instanceof SyntaxError?'O arquivo não contém um backup JSON válido.':error.message);}
+  }catch(error){toast(error instanceof SyntaxError?'Não foi possível ler esta cópia. Escolha o arquivo de dados salvo pelo Horas.':error.message);}
   finally{event.target.value='';}
 });
 document.addEventListener('change',event=>{
@@ -141,6 +144,59 @@ document.addEventListener('submit',async event=>{
     if(wasFirst&&location.hash!=='#overview')location.hash='overview';
     render();toast(wasFirst?'Seu espaço está pronto. Vamos começar!':'Perfil atualizado. Sua meta foi recalculada.');
   }catch(error){$('#profile-error').textContent=error.message;button.disabled=false;}
+});
+const resetDialog=$('#reset-dialog');
+const resetForm=$('#reset-form');
+function closeReset(){if(!resetInProgress)resetDialog.close();}
+document.addEventListener('click',event=>{
+  if(!event.target.closest('#open-reset')||!profile)return;
+  resetForm.reset();
+  $('#reset-error').textContent='';
+  $('#confirm-reset').disabled=true;
+  const attachments=records.filter(record=>record.evidence).length;
+  $('#reset-summary').textContent=`Serão removidos: 1 perfil, ${records.length} atividade(s) e ${attachments} comprovante(s).`;
+  resetDialog.showModal();
+});
+$('#close-reset').onclick=$('#cancel-reset').onclick=closeReset;
+$('#backup-before-reset').onclick=exportBackup;
+resetDialog.addEventListener('cancel',event=>{if(resetInProgress)event.preventDefault();});
+$('#reset-confirmation').addEventListener('input',event=>{
+  $('#confirm-reset').disabled=resetInProgress||event.target.value!=='APAGAR';
+});
+resetForm.addEventListener('submit',async event=>{
+  event.preventDefault();
+  if(resetInProgress||$('#reset-confirmation').value!=='APAGAR')return;
+  resetInProgress=true;
+  const controls=[...resetForm.querySelectorAll('button,input')];
+  controls.forEach(control=>control.disabled=true);
+  $('#reset-error').textContent='';
+  try{
+    await storage;
+    await clearWorkspace(db);
+    records=[];
+    profile=null;
+    editing=null;
+    existingEvidence=null;
+    search='';statusFilter='';categoryFilter='';
+    form.reset();
+    $('#existing-evidence').replaceChildren();
+    $('#detail-content').replaceChildren();
+    $('#import-file').value='';
+    if(dialog.open)dialog.close();
+    if($('#detail-dialog').open)$('#detail-dialog').close();
+    resetDialog.close();
+    location.hash='profile';
+    render();
+    $('#main').focus();
+    window.scrollTo({top:0});
+    toast('Seus dados foram apagados. Configure seu perfil para recomeçar.');
+  }catch(error){
+    $('#reset-error').textContent=error.message;
+  }finally{
+    resetInProgress=false;
+    controls.forEach(control=>control.disabled=false);
+    $('#confirm-reset').disabled=$('#reset-confirmation').value!=='APAGAR';
+  }
 });
 window.addEventListener('hashchange',()=>{render();window.scrollTo({top:0});});
 $('#main').innerHTML='<div class="loading">Preparando seu espaço…</div>';

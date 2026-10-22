@@ -120,15 +120,21 @@ Os registros ficam em **IndexedDB**, no navegador e no endereço utilizado para 
 
 ### Fazer backup ou transferir os dados
 
-1. Clique em **Exportar backup** para salvar um arquivo JSON com seu perfil, atividades e anexos.
+1. Clique em **Salvar uma cópia dos meus dados** para salvar um arquivo JSON com seu perfil, atividades e anexos.
 2. Guarde esse arquivo em um local seguro: ele pode conter dados pessoais e certificados.
-3. Para recuperar os dados em outro navegador ou computador, utilize **Importar backup**.
+3. Para recuperar os dados em outro navegador ou computador, utilize **Recuperar meus dados de uma cópia**.
 
 A importação substitui os registros atuais mediante confirmação. Os backups atuais incluem o perfil e a meta. Backups da primeira versão também são aceitos: preservam o perfil atual ou permitem configurá-lo depois da restauração.
 
 Se utilizou a antiga versão hospedada, exporte o backup naquele endereço e importe na aplicação local.
 
 Não adicione backups ou comprovantes ao repositório. O `.gitignore` exclui os arquivos com o nome padrão `horas-backup-*.json`.
+
+### Apagar os dados e recomeçar
+
+Em **Meu perfil**, clique em **Apagar meus dados e recomeçar**. A confirmação informa quantos registros serão removidos e permite exportar um backup antes. Digite **APAGAR** e clique em **Apagar definitivamente** para confirmar.
+
+Isso remove o perfil, todas as atividades e seus comprovantes do armazenamento desta aplicação no navegador e retorna à configuração inicial. A exclusão só pode ser revertida pela importação de um backup. Arquivos de backup já baixados no computador não são apagados. Cancelar ou fechar a confirmação mantém os dados existentes.
 
 ## Limitações
 
@@ -149,6 +155,7 @@ horas-complementares/
 │   ├── index.html       # Estrutura da página
 │   ├── styles.css       # Layout e estilos responsivos
 │   ├── app.js           # Interface e armazenamento local
+│   ├── storage.js       # Exclusão transacional dos dados locais
 │   ├── rules.js         # Categorias, conversões e limites
 │   └── profile.js       # Perfil, progresso e backups
 ├── tests/              # Testes das regras, metas e backups
