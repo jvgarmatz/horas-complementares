@@ -1,36 +1,79 @@
 # Horas — atividades complementares
 
-Aplicação estática em português para planejar e acompanhar uma meta de 90 horas. Regras das 24 categorias transcritas das imagens do manual fornecidas nesta conversa. Não é um sistema oficial da CESAR School.
+Organizador de atividades complementares com perfil local, simulador de aproveitamento e acompanhamento de progresso. No primeiro acesso, cada aluno informa seu nome, curso e a carga horária exigida. A meta pode ser alterada em **Meu perfil**.
 
-## Executar
+As 24 categorias seguem as tabelas do manual da CESAR School fornecidas para este projeto. **Mudar o curso ou a meta não muda as regras de aproveitamento.** Quem utilizar o sistema deve confirmar se esse regulamento se aplica ao seu curso. Este projeto não é um sistema oficial da instituição.
 
-Requer Node.js 22 ou superior, sem dependências de instalação.
+## Executar no seu computador
 
-```powershell
-cd D:\programacao\horas_cesar\horas-complementares
+Requer Node.js 22 ou superior. Não há dependências para instalar.
+
+Após baixar ou clonar o repositório, entre na pasta que contém `package.json` e execute:
+
+```sh
 npm start
 ```
 
-Abra http://127.0.0.1:4173. Execute `npm test` para verificar as regras de cálculo.
+Abra **http://127.0.0.1:4173**. Mantenha o terminal aberto enquanto utiliza o servidor e use `Ctrl+C` para encerrá-lo. Para executar os testes:
 
-## Funcionamento
+```sh
+npm test
+```
 
-- Cadastro, edição, exclusão, busca e filtros de atividades.
-- Simulação ao preencher; conversões por horas, meses, semestres e unidades; limite por categoria.
+Use o servidor HTTP, em vez de abrir `index.html` diretamente, pois a aplicação utiliza módulos JavaScript.
+
+## Como usar
+
+1. No primeiro acesso, preencha nome do aluno, curso e horas complementares exigidas. O valor inicial sugerido é 90 h, mas você pode informar uma meta maior ou menor.
+2. Consulte **Categorias e regras** para conferir enquadramento, conversão, limite e comprovação.
+3. Cadastre ou simule suas atividades. É possível anexar comprovantes e marcar os requisitos já conferidos.
+4. Informe a situação: simulada, enviada ou aprovada pela faculdade. A aprovação é declarada pelo aluno; não existe integração com a instituição.
+5. Consulte o saldo no painel. Para alterar o nome, o curso ou a meta, abra **Meu perfil**. As atividades existentes são mantidas.
+6. Exporte um backup regularmente. Ele inclui perfil, meta, atividades e comprovantes.
+
+## Como as horas são calculadas
+
+- São aplicadas as conversões e os limites de cada categoria, independentemente da meta pessoal.
 - Aprovadas têm prioridade sobre enviadas; enviadas têm prioridade sobre simuladas. Dentro de cada situação, a ordem de cadastro define a ocupação do limite. Uma edição preserva a posição original.
-- O saldo para concluir as 90 horas considera apenas aprovadas. A previsão soma todos os estados e pode ultrapassar a meta, mas nunca o limite de cada categoria.
-- Situação de aprovação declarada pelo aluno. Sem envio automático ou integração com a faculdade.
-- Comprovantes PDF, PNG, JPG e WebP de até 5 MB. Dados e anexos em IndexedDB, apenas no navegador e na origem usada. Não há conta ou sincronização entre dispositivos. A versão local e a publicada têm armazenamentos separados. Limpar os dados do navegador apaga os registros.
-- Backup e restauração em JSON, incluindo comprovantes. Restauração substitui os registros mediante confirmação. Guarde o arquivo com cuidado: pode conter dados pessoais.
+- O saldo para concluir a meta considera apenas aprovadas. A previsão soma todos os estados e pode ultrapassar a meta, mas nunca o limite de cada categoria.
+- Exemplo: com 50 h aprovadas, uma meta de 120 h deixa saldo de 70 h. Alterá-la para 40 h deixa saldo zero, sem apagar nem reduzir as horas cadastradas.
+- Mudar o nome do curso não seleciona automaticamente outro regulamento. Atualmente existe apenas o conjunto de regras da CESAR School incluído no projeto.
 
-## Premissas que precisam ser confirmadas no regulamento completo
+## Armazenamento e backup
+
+Perfil, atividades e anexos ficam em IndexedDB, no navegador e no endereço em que o sistema foi aberto. Não há cadastro em servidor, autenticação por aluno ou sincronização entre dispositivos. Cada combinação de navegador/perfil do navegador e endereço tem seu próprio espaço. Pessoas que usam o mesmo perfil de navegador e endereço compartilham os registros.
+
+Limpar os dados do site pode apagar os registros. A versão publicada e a local têm armazenamentos separados; trocar de navegador, dispositivo ou endereço não transfere os dados. Use **Exportar backup** e **Importar backup** para transportá-los. O arquivo pode conter dados pessoais e comprovantes.
+
+- Anexos: PDF, PNG, JPG ou WebP, até 5 MB por arquivo.
+- Backups novos usam formato 2 e incluem perfil e identificação do conjunto de regras.
+- Backups da primeira versão continuam sendo aceitos. Como não tinham perfil, preservam o perfil e a meta atuais. Se importados antes da configuração inicial, as atividades são restauradas e o aluno preenche o perfil em seguida.
+- A restauração substitui os registros atuais mediante confirmação. No formato 2, o perfil também é substituído pelo do backup.
+- A atualização a partir da versão inicial preserva o banco de dados existente. Alunos que já tinham atividades precisam apenas completar o perfil.
+
+## Compartilhar o código e hospedar
+
+A aplicação é estática: `dist/` contém todos os arquivos necessários ao site. O código pode ser disponibilizado em um repositório no GitHub e servido por uma hospedagem estática com suporte a módulos JavaScript, usando `dist` como diretório de publicação. Não há etapa de build. Cada visitante configura seu próprio perfil no navegador.
+
+A publicação do código no GitHub e a liberação de acesso ao site atual são ações separadas. O site de demonstração em Sites permanece com o acesso já configurado. Ao hospedar uma cópia independente, exclua a identidade de hospedagem existente (`.openai/hosting.json`) ou configure um projeto próprio; ela não é necessária para executar localmente ou em outra hospedagem.
+
+Os arquivos de backup não fazem parte do código. O `.gitignore` exclui os backups com o nome padrão e os pacotes de publicação. Não inclua comprovantes ou registros pessoais no repositório.
+
+## Premissas do regulamento
 
 Nas categorias sem conversão explícita, foi adotada a carga horária declarada/comprovada, sujeita à avaliação da faculdade. Períodos de 6 meses contabilizam somente blocos completos; eventual tratamento de períodos adicionais precisa ser confirmado. Concursos/competições aceitam uma estimativa de até 25 horas por participação. Outras atividades dependem de NDE/diretoria. Checklists são declarações do aluno, não análise automatizada de documentos.
 
-Não há OCR, validação de autenticidade, detecção automática de certificados repetidos nem conferência automática das datas de início/fim do curso. Cada realização deve ser cadastrada uma única vez. A versão/data do manual e regras gerais fora das tabelas ainda precisam ser fornecidas. Mudanças em `dist/rules.js` afetam os cálculos de todos os registros existentes.
+Não há OCR, validação de autenticidade, detecção automática de certificados repetidos nem conferência automática das datas de início/fim do curso. Cada realização deve ser cadastrada uma única vez. A versão/data do manual e regras gerais fora das tabelas ainda precisam ser confirmadas. Mudanças em `dist/rules.js` afetam os cálculos de todos os registros existentes.
 
-## Arquivos
+## Organização do código
 
-`dist/rules.js`: regras e cálculo; `dist/app.js`: interface e armazenamento; `dist/styles.css`: layout responsivo; `tests/rules.test.js`: testes; `server.mjs`: servidor local restrito ao diretório dist.
+| Arquivo | Responsabilidade |
+| --- | --- |
+| `dist/rules.js` | Categorias, conversões, limites e validação de atividades |
+| `dist/profile.js` | Perfil, meta personalizada, progresso e compatibilidade de backups |
+| `dist/app.js` | Interface e persistência local |
+| `dist/styles.css` | Layout responsivo |
+| `tests/` | Testes de regras, perfis, metas e backups |
+| `server.mjs` | Servidor local restrito a `dist/` |
 
-Sem ferramentas de build. A pasta `dist` pode ser hospedada diretamente. A fonte Google Fonts é opcional; sem rede, o layout usa fontes locais.
+A fonte Google Fonts é opcional; sem conexão, o layout utiliza fontes locais.

@@ -1,0 +1,5 @@
+node_modules/
+*.tar.gz
+horas-backup-*.json
+.DS_Store
+Thumbs.db

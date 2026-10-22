@@ -1,4 +1,3 @@
-export const GOAL=90;
 const related='A atividade está relacionada à área do curso.';
 const during='A atividade ocorreu durante o curso.';
 const category=(id,name,cap,mode,rate,proof,rule,checks=[])=>({id,name,cap,mode,rate,proof,rule,checks});
