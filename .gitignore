@@ -1,4 +1,5 @@
 node_modules/
+.openai/
 *.tar.gz
 horas-backup-*.json
 .DS_Store

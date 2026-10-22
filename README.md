@@ -4,6 +4,8 @@ Organizador de atividades complementares com perfil local, simulador de aproveit
 
 As 24 categorias seguem as tabelas do manual da CESAR School fornecidas para este projeto. **Mudar o curso ou a meta não muda as regras de aproveitamento.** Quem utilizar o sistema deve confirmar se esse regulamento se aplica ao seu curso. Este projeto não é um sistema oficial da instituição.
 
+Projeto acadêmico independente destinado a apoiar estudantes da CESAR School, exclusivamente para fins educacionais e sem finalidade comercial. O sistema não substitui o regulamento vigente nem a análise e a validação das atividades pela coordenação. Esse aviso também aparece no painel em uma seção azul própria, logo abaixo do bloco laranja de progresso.
+
 ## Executar no seu computador
 
 Requer Node.js 22 ou superior. Não há dependências para instalar.
@@ -14,7 +16,7 @@ Após baixar ou clonar o repositório, entre na pasta que contém `package.json`
 npm start
 ```
 
-Abra **http://127.0.0.1:4173**. Mantenha o terminal aberto enquanto utiliza o servidor e use `Ctrl+C` para encerrá-lo. Para executar os testes:
+Abra **http://127.0.0.1:4173**. O servidor aceita conexões apenas da própria máquina (`127.0.0.1`). Não é necessário publicar o site nem ter conexão com a internet para utilizar a aplicação. Mantenha o terminal aberto enquanto utiliza o servidor e use `Ctrl+C` para encerrá-lo. Para executar os testes:
 
 ```sh
 npm test
@@ -43,7 +45,7 @@ Use o servidor HTTP, em vez de abrir `index.html` diretamente, pois a aplicaçã
 
 Perfil, atividades e anexos ficam em IndexedDB, no navegador e no endereço em que o sistema foi aberto. Não há cadastro em servidor, autenticação por aluno ou sincronização entre dispositivos. Cada combinação de navegador/perfil do navegador e endereço tem seu próprio espaço. Pessoas que usam o mesmo perfil de navegador e endereço compartilham os registros.
 
-Limpar os dados do site pode apagar os registros. A versão publicada e a local têm armazenamentos separados; trocar de navegador, dispositivo ou endereço não transfere os dados. Use **Exportar backup** e **Importar backup** para transportá-los. O arquivo pode conter dados pessoais e comprovantes.
+Limpar os dados do site pode apagar os registros. Trocar de navegador, dispositivo ou endereço não transfere os dados. Use **Exportar backup** e **Importar backup** para transportá-los. Se você utilizou a versão anteriormente hospedada, exporte o backup nesse endereço e importe na aplicação local. O arquivo pode conter dados pessoais e comprovantes.
 
 - Anexos: PDF, PNG, JPG ou WebP, até 5 MB por arquivo.
 - Backups novos usam formato 2 e incluem perfil e identificação do conjunto de regras.
@@ -51,11 +53,11 @@ Limpar os dados do site pode apagar os registros. A versão publicada e a local 
 - A restauração substitui os registros atuais mediante confirmação. No formato 2, o perfil também é substituído pelo do backup.
 - A atualização a partir da versão inicial preserva o banco de dados existente. Alunos que já tinham atividades precisam apenas completar o perfil.
 
-## Compartilhar o código e hospedar
+## Compartilhar o código para uso local
 
-A aplicação é estática: `dist/` contém todos os arquivos necessários ao site. O código pode ser disponibilizado em um repositório no GitHub e servido por uma hospedagem estática com suporte a módulos JavaScript, usando `dist` como diretório de publicação. Não há etapa de build. Cada visitante configura seu próprio perfil no navegador.
+A aplicação é estática: `dist/` contém todos os arquivos necessários. O código pode ser disponibilizado em um repositório no GitHub para que cada aluno baixe ou clone o projeto e execute `npm start` na própria máquina. Não há etapa de build. Cada aluno configura seu perfil no navegador local.
 
-A publicação do código no GitHub e a liberação de acesso ao site atual são ações separadas. O site de demonstração em Sites permanece com o acesso já configurado. Ao hospedar uma cópia independente, exclua a identidade de hospedagem existente (`.openai/hosting.json`) ou configure um projeto próprio; ela não é necessária para executar localmente ou em outra hospedagem.
+Por decisão do projeto, o uso é exclusivamente local. A configuração de hospedagem foi removida e não devem ser feitas novas publicações no ChatGPT Sites ou em outros serviços sem solicitação explícita do responsável pelo projeto. Disponibilizar o código no GitHub não significa hospedar a aplicação.
 
 Os arquivos de backup não fazem parte do código. O `.gitignore` exclui os backups com o nome padrão e os pacotes de publicação. Não inclua comprovantes ou registros pessoais no repositório.
 
@@ -76,4 +78,4 @@ Não há OCR, validação de autenticidade, detecção automática de certificad
 | `tests/` | Testes de regras, perfis, metas e backups |
 | `server.mjs` | Servidor local restrito a `dist/` |
 
-A fonte Google Fonts é opcional; sem conexão, o layout utiliza fontes locais.
+O layout utiliza fontes disponíveis na máquina, sem carregar fontes ou outros recursos externos.
