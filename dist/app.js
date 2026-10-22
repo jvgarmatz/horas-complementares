@@ -1,5 +1,5 @@
 import {categories,getCategory,calculate,validateRecord} from './rules.js';
-import {DEFAULT_GOAL,validateProfile,summarize,createBackup,restoreBackup} from './profile.js';
+import {COURSES,findProfileCourse,createCourseProfile,validateProfile,summarize,createBackup,restoreBackup} from './profile.js';
 const $=s=>document.querySelector(s);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>Number(n).toLocaleString('pt-BR',{maximumFractionDigits:2});
@@ -44,17 +44,20 @@ function renderCategories(){const c=calculate(records);return heading('Encontre 
 function renderSimulator(){return heading('Antes de enviar, experimente.','Entenda o que sua próxima atividade pode acrescentar à sua jornada.',false)+`<section class="panel simulator-hero"><div><span class="eyebrow">PLANEJE COM MAIS CLAREZA</span><h2>Seu certificado tem horas.<br>Vamos descobrir quantas contam?</h2><p>O simulador considera a regra da categoria e as atividades que você já cadastrou. A estimativa vem com o cálculo e os requisitos para conferir.</p><button class="button primary" data-action="new">◇ Fazer uma simulação <span>↗</span></button></div><div class="steps"><div class="step"><span>01</span><div><h3>Escolha a categoria</h3><p>Consulte o enquadramento da atividade no manual.</p></div></div><div class="step"><span>02</span><div><h3>Informe a participação</h3><p>Horas, meses ou quantidade, conforme a regra.</p></div></div><div class="step"><span>03</span><div><h3>Veja o aproveitamento</h3><p>Confira a conversão, os limites e os documentos.</p></div></div></div></section><section class="example"><h3>Na prática: um workshop CESAR de 8 horas</h3><p>A conversão gera 4 horas complementares. Se você já tem 18 das 20 horas permitidas nessa categoria, o aproveitamento adicional será de 2 horas.</p></section><div class="tip"><span>◇</span><div><strong>Uma estimativa para se organizar.</strong><p>A simulação não aprova certificados e não substitui a avaliação da faculdade. Concursos e outras atividades têm análise específica.</p></div></div>`;}
 function renderProfile(){
   const first=!profile;
+  const selectedCourse=findProfileCourse(profile);
+  const groups=[...new Set(COURSES.map(course=>course.group))];
   return `<section class="profile-page ${first?'first-access':''}">
     <div class="profile-intro"><span class="eyebrow">${first?'BEM-VINDO AO HORAS':'SEU ESPAÇO, SUAS METAS'}</span>
       <h1>${first?'Vamos conhecer sua jornada?':'Meu perfil'}</h1>
-      <p>${first?'Antes de começar, conte um pouco sobre você e a meta do seu curso.':'Atualize seus dados ou ajuste a carga horária exigida pelo seu curso.'}</p>
+      <p>${first?'Informe seu nome e selecione seu curso. A meta de horas será preenchida automaticamente.':'Atualize seu nome ou selecione outro curso para ajustar automaticamente a meta de horas.'}</p>
     </div>
     <form id="profile-form" class="panel profile-form">
       <label>Nome do aluno<input name="studentName" autocomplete="name" required maxlength="100" placeholder="Como você se chama?" value="${esc(profile?.name||'')}"></label>
-      <label>Curso<input name="course" required maxlength="150" placeholder="Ex.: Ciência da Computação" value="${esc(profile?.course||'')}"></label>
-      <label>Horas complementares exigidas<input name="goal" type="number" required min="0.01" max="10000" step="0.01" inputmode="decimal" value="${profile?.goal??DEFAULT_GOAL}" aria-describedby="goal-help"></label>
-      <p id="goal-help" class="field-help">Informe o total exigido pelo seu curso. Você pode mudar essa meta depois sem perder suas atividades.</p>
-      <div class="notice"><strong>Regulamento utilizado: CESAR School</strong><br>As 24 categorias e seus limites seguem as tabelas do manual fornecido para este projeto. Confirme se essas regras se aplicam ao seu curso. A meta é pessoal; os limites das categorias continuam seguindo esse manual.</div>
+      <label>Curso<select name="course" required aria-describedby="goal-help"><option value="" disabled ${!selectedCourse?'selected':''}>Selecione seu curso</option>${groups.map(group=>`<optgroup label="${esc(group)}">${COURSES.filter(course=>course.group===group).map(course=>`<option value="${course.id}" ${selectedCourse?.id===course.id?'selected':''}>${esc(course.name)} — ${course.goal} horas</option>`).join('')}</optgroup>`).join('')}</select></label>
+      <label>Horas complementares exigidas<input name="goal" type="number" readonly value="${selectedCourse?.goal??''}" placeholder="Selecione um curso" aria-describedby="goal-help"></label>
+      <p id="goal-help" class="field-help">A meta é definida pelo curso selecionado: bacharelados exigem 120 horas e tecnológicos, 90 horas. Ao trocar de curso, suas atividades são preservadas.</p>
+      ${profile&&!profile.courseId?`<p class="profile-preserved">Perfil anterior: ${esc(profile.course)} · ${fmt(profile.goal)} horas. ${selectedCourse?'Ao salvar, a meta será atualizada conforme o curso da lista.':'Selecione seu curso para atualizar o perfil.'}</p>`:''}
+      <div class="notice"><strong>Regulamento utilizado: CESAR School</strong><br>As 24 categorias e seus limites seguem as tabelas do manual fornecido para este projeto. Confirme se essas regras se aplicam ao seu curso. A meta acompanha o curso selecionado; os limites das categorias continuam seguindo esse manual.</div>
       ${records.length?`<p class="profile-preserved">✓ Suas ${records.length} atividades já cadastradas serão mantidas.</p>`:''}
       <p id="profile-error" class="error" role="alert"></p>
       <div class="profile-form-actions"><button class="button primary" type="submit">${first?'Começar minha jornada':'Salvar perfil'} <span>↗</span></button>${first?'<button class="text-button" type="button" data-action="import">Já tenho um backup</button>':'<a href="#overview" class="button secondary">Voltar ao painel</a>'}</div>
@@ -113,13 +116,18 @@ $('#import-file').addEventListener('change',async event=>{
   }catch(error){toast(error instanceof SyntaxError?'O arquivo não contém um backup JSON válido.':error.message);}
   finally{event.target.value='';}
 });
+document.addEventListener('change',event=>{
+  if(event.target.name!=='course'||event.target.form?.id!=='profile-form')return;
+  const course=COURSES.find(course=>course.id===event.target.value);
+  event.target.form.elements.goal.value=course?.goal??'';
+});
 document.addEventListener('submit',async event=>{
   if(event.target.id!=='profile-form')return;
   event.preventDefault();
   const profileForm=event.target,button=profileForm.querySelector('[type="submit"]');
   button.disabled=true;
   try{
-    const next=validateProfile({name:profileForm.elements.studentName.value,course:profileForm.elements.course.value,goal:Number(profileForm.elements.goal.value)});
+    const next=createCourseProfile(profileForm.elements.studentName.value,profileForm.elements.course.value);
     const wasFirst=!profile;
     await persist(records,next);
     if(wasFirst&&location.hash!=='#overview')location.hash='overview';

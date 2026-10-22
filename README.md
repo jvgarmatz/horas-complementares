@@ -10,7 +10,7 @@ O **Horas** é um projeto acadêmico independente voltado aos estudantes da **CE
 
 ## Funcionalidades
 
-- **Perfil do aluno:** nome, curso e meta de horas personalizável.
+- **Perfil do aluno:** nome e seleção do curso, com meta de horas preenchida automaticamente.
 - **Painel de progresso:** horas aprovadas, enviadas, simuladas e saldo restante.
 - **Simulador:** previsão de aproveitamento com conversões e limites por categoria.
 - **24 categorias:** consulta às regras, à comprovação exigida e aos requisitos.
@@ -60,13 +60,26 @@ Não abra `dist/index.html` diretamente: utilize `npm start`, pois a aplicação
 
 ## Primeiro acesso
 
-1. Informe seu nome, curso e a quantidade de horas complementares exigidas.
+1. Informe seu nome e selecione seu curso. A carga horária exigida será preenchida automaticamente.
 2. Consulte **Categorias e regras** para conferir o enquadramento da atividade.
 3. Adicione uma atividade, informe os dados e anexe o comprovante, se disponível.
 4. Confira a estimativa, os requisitos e a situação cadastrada.
 5. Acompanhe seu progresso na **Visão geral**.
 
-A meta sugerida é de **90 horas**, mas pode ser maior ou menor. Para alterá-la, acesse **Meu perfil**. As atividades existentes são preservadas.
+A meta é definida pelo curso selecionado e não pode ser digitada manualmente. Para trocar de curso, acesse **Meu perfil**. As atividades existentes são preservadas e o saldo é recalculado.
+
+| Modalidade | Curso | Horas exigidas |
+| --- | --- | ---: |
+| Bacharelado | Ciência da Computação | 120 h |
+| Bacharelado | Sistemas de Informação | 120 h |
+| Bacharelado | Design | 120 h |
+| Bacharelado | ADM Tech | 120 h |
+| Tecnológico | Análise e Desenvolvimento de Sistemas (ADS) | 90 h |
+| Tecnológico | Segurança da Informação (Cibersegurança) | 90 h |
+| Tecnológico | Bancos de Dados e IA | 90 h |
+| Tecnológico | Gestão da Tecnologia da Informação (GTI) | 90 h |
+
+Perfis antigos continuam funcionando com os dados existentes. Ao editar um perfil antigo, o sistema tenta reconhecer o curso pelo nome ou sigla; ao salvar, aplica a meta da lista. Cursos não reconhecidos exigem uma seleção. Essa atualização não apaga atividades nem comprovantes.
 
 ## Regras de aproveitamento
 
@@ -74,7 +87,7 @@ A meta sugerida é de **90 horas**, mas pode ser maior ou menor. Para alterá-la
 
 As 24 categorias foram transcritas das tabelas do manual fornecido para este projeto. Antes de apresentar suas atividades, confirme se essas regras se aplicam ao seu curso e se continuam vigentes.
 
-**Alterar o curso ou a meta do perfil não modifica as categorias, as conversões ou os limites do regulamento.** Atualmente, a aplicação contém apenas esse conjunto de regras da CESAR School.
+**Trocar de curso ajusta a meta, mas não modifica as categorias, as conversões ou os limites do regulamento.** Atualmente, a aplicação contém apenas esse conjunto de regras da CESAR School.
 
 ### Situações das atividades
 
@@ -153,7 +166,7 @@ Na pasta do projeto, execute:
 npm test
 ```
 
-Os testes cobrem conversões, limites por categoria, prioridade das situações, metas personalizadas, validação de registros e compatibilidade dos backups.
+Os testes cobrem conversões, limites por categoria, prioridade das situações, metas por curso, compatibilidade de perfis antigos, validação de registros e compatibilidade dos backups.
 
 ## Contribuir e compartilhar
 

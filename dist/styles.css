@@ -11,3 +11,5 @@
 .academic-disclaimer{display:flex;align-items:flex-start;gap:16px;margin:0 0 24px;padding:22px 24px;background:#edf3fc;border:1px solid #c6d7ee;border-left:4px solid #6487b8;border-radius:12px;color:#344d70}.disclaimer-icon{display:grid;place-items:center;flex-shrink:0;width:32px;height:32px;border-radius:9px;background:#dce8f8;color:#466b9d;font-size:21px}.academic-disclaimer h2{font-size:14px;line-height:1.5;color:#2f4e76;margin:0 0 8px}.academic-disclaimer p{font-size:12px;line-height:1.8;color:#4e6481;margin:0}@media(max-width:560px){.academic-disclaimer{gap:12px;padding:18px 15px;margin-bottom:22px}.disclaimer-icon{width:27px;height:27px;font-size:18px}.academic-disclaimer h2{font-size:13px}.academic-disclaimer p{font-size:11px}}
 
 .academic-disclaimer .disclaimer-reference{margin-top:14px;padding-top:12px;border-top:1px solid #c6d7ee}.disclaimer-reference strong{font-weight:600}.disclaimer-reference a{color:#315f99;text-decoration:underline;text-underline-offset:3px}.disclaimer-reference a:hover{color:#1f426f}
+
+.profile-form input[readonly]{background:#f1f4f8;color:#44536a;font-weight:600;cursor:default}
