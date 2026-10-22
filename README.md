@@ -103,6 +103,7 @@ O sistema não envia documentos à faculdade nem consulta aprovações oficiais.
 ### Cálculo das horas
 
 - Cada atividade segue a conversão e o limite da sua categoria.
+- Ao atingir o limite da categoria, considerando atividades aprovadas, enviadas e simuladas, o cadastro de novas atividades e certificados nessa categoria é bloqueado. Os registros existentes podem ser editados para corrigir dados ou atualizar a aprovação. Não é permitido transferir uma atividade de outra categoria para uma categoria já completa. Reduzir ou excluir registros pode liberar saldo novamente.
 - As aprovadas ocupam o limite primeiro, seguidas das enviadas e das simuladas.
 - Dentro de cada situação, a ordem de cadastro define a ocupação do limite. Editar uma atividade preserva sua posição.
 - O saldo para concluir a meta considera apenas as horas aprovadas.

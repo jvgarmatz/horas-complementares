@@ -28,6 +28,21 @@ export const categories=[
  category('carreiras','Portal de Carreiras',10,'fixed',10,'Link e print do perfil pessoal no Portal de Carreiras com status PERFIL CAMPEÃO, nível 3, no momento da entrega.','O aluno deve administrar e manter seu perfil no nível 3.',['Meu perfil está com status PERFIL CAMPEÃO, nível 3.'])
 ];
 export function getCategory(id){return categories.find(c=>c.id===id);}
+export function categoryCapacity(records,categoryId){
+  const category=getCategory(categoryId);
+  if(!category)throw Error('Categoria inválida.');
+  const used=calculate(records).used[categoryId]||0;
+  const remaining=Math.max(0,Math.round((category.cap-used)*100)/100);
+  return {used,remaining,cap:category.cap,full:remaining===0};
+}
+export function assertCategoryAvailable(records,categoryId,editingId=null){
+  const capacity=categoryCapacity(records,categoryId);
+  const original=editingId?records.find(record=>record.id===editingId):null;
+  // Permite corrigir registros existentes, inclusive sua situação de aprovação.
+  if(original?.category===categoryId)return capacity;
+  if(capacity.full)throw Error(`Esta categoria já atingiu o limite de ${capacity.cap} horas. Não é possível adicionar novas atividades ou certificados nela. Edite ou exclua registros existentes para liberar horas, ou escolha outra categoria.`);
+  return capacity;
+}
 export function baseHours(record){const c=getCategory(record.category);if(!c)throw Error('Categoria inválida.');const value=Number(record.amount);if(!Number.isFinite(value)||value<=0)throw Error('Informe um valor maior que zero.');if(['units','semesters','months'].includes(c.mode)&&!Number.isInteger(value))throw Error('Use uma quantidade inteira.');if(c.mode==='fixed')return c.rate;if(c.mode==='months')return Math.floor(value/6)*c.rate;if(c.mode==='review'&&value>25)throw Error('Cada participação pode valer no máximo 25 horas.');return Math.round(value*c.rate*100)/100;}
 const priority={approved:0,pending:1,simulated:2};
 export function calculate(records){const used={};const results=new Map();const totals={approved:0,pending:0,simulated:0};const ordered=records.map((r,index)=>({...r,index})).sort((a,b)=>priority[a.status]-priority[b.status]||a.index-b.index);for(const r of ordered){const c=getCategory(r.category);const base=baseHours(r);const credited=Math.round(Math.min(base,Math.max(0,c.cap-(used[c.id]||0)))*100)/100;used[c.id]=(used[c.id]||0)+credited;totals[r.status]+=credited;results.set(r.id,{base,credited,excluded:Math.round((base-credited)*100)/100});}for(const key of Object.keys(totals))totals[key]=Math.round(totals[key]*100)/100;return {results,used,totals,total:Math.round(Object.values(totals).reduce((a,b)=>a+b,0)*100)/100};}

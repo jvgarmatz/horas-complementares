@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {categories,baseHours,calculate,validateRecord} from '../dist/rules.js';
+import {categories,baseHours,calculate,validateRecord,categoryCapacity,assertCategoryAvailable} from '../dist/rules.js';
 const record=(id,category,amount,status='simulated')=>({id,title:'Atividade',category,amount,status,date:'2026-10-22',notes:'',checks:categories.find(c=>c.id===category).checks.map(()=>true),evidence:null});
 test('24 categorias com limites e identificadores únicos',()=>{assert.equal(categories.length,24);assert.equal(new Set(categories.map(c=>c.id)).size,24);});
 test('workshop de 8 horas com saldo de 2 horas',()=>{const c=calculate([record('a','workshops',36,'approved'),record('b','workshops',8)]);assert.deepEqual(c.results.get('b'),{base:4,credited:2,excluded:2});assert.equal(c.total,20);});
@@ -14,3 +14,33 @@ test('valores inválidos não entram no cálculo',()=>{for(const v of [0,-1,NaN,
 test('backup valida categoria, status e tipo de comprovante',()=>{assert.doesNotThrow(()=>validateRecord(record('a','cursos',10)));assert.throws(()=>validateRecord({...record('a','cursos',10),status:'other'}));assert.throws(()=>validateRecord({...record('a','cursos',10),category:'unknown'}));assert.throws(()=>validateRecord({...record('a','cursos',10),evidence:{type:'text/html',name:'a.html',data:'data:text/html;base64,abc'}}));});
 test('comprovante de 5MB passa sem estourar a pilha de validação',()=>{const r=record('a','cursos',10);r.evidence={name:'arquivo.pdf',type:'application/pdf',data:'data:application/pdf;base64,'+Buffer.alloc(5*1024*1024).toString('base64')};assert.doesNotThrow(()=>validateRecord(r));r.evidence.data='data:application/pdf;base64,'+Buffer.alloc(5*1024*1024+1).toString('base64');assert.throws(()=>validateRecord(r));});
 test('backup rejeita datas inexistentes e chaves herdadas como status',()=>{assert.throws(()=>validateRecord({...record('a','cursos',10),date:'2026-02-30'}));assert.throws(()=>validateRecord({...record('a','cursos',10),status:'__proto__'}));});
+
+test('categoria completa bloqueia novos registros em qualquer situação',()=>{
+  for(const status of ['approved','pending','simulated']){
+    const records=[record('a','cursos',20,status)];
+    assert.deepEqual(categoryCapacity(records,'cursos'),{used:20,remaining:0,cap:20,full:true});
+    assert.throws(()=>assertCategoryAvailable(records,'cursos'),/limite de 20 horas/);
+  }
+});
+test('conversões e limites fixos também bloqueiam novos certificados',()=>{
+  assert.throws(()=>assertCategoryAvailable([record('a','workshops',40)],'workshops'));
+  assert.throws(()=>assertCategoryAvailable([record('a','portfolio',15)],'portfolio'));
+});
+test('saldo parcial continua aceitando atividade com aproveitamento limitado ao saldo',()=>{
+  const records=[record('a','cursos',18)];
+  assert.equal(assertCategoryAvailable(records,'cursos').remaining,2);
+  const c=calculate([...records,record('b','cursos',10)]);
+  assert.equal(c.results.get('b').credited,2);
+});
+test('permite editar uma atividade da categoria completa mas bloqueia transferir outra para ela',()=>{
+  const records=[record('a','cursos',20),record('b','congressos',5)];
+  assert.doesNotThrow(()=>assertCategoryAvailable(records,'cursos','a'));
+  assert.throws(()=>assertCategoryAvailable(records,'cursos','b'));
+  assert.throws(()=>assertCategoryAvailable(records,'cursos','id-inexistente'));
+});
+test('reduzir ou excluir registros libera a categoria novamente',()=>{
+  const records=[record('a','cursos',20)];
+  assert.throws(()=>assertCategoryAvailable(records,'cursos'));
+  assert.equal(assertCategoryAvailable([{...records[0],amount:10}],'cursos').remaining,10);
+  assert.equal(assertCategoryAvailable([],'cursos').remaining,20);
+});
